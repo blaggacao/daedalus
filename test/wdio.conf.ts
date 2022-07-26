@@ -1,4 +1,4 @@
-const { join } = require('path');
+const { resolve, join } = require('path');
 const fs = require('fs');
 
 //const packageJson = JSON.parse(fs.readFileSync('./package.json'));
@@ -8,14 +8,12 @@ const fs = require('fs');
 
 const isInDebugMode = process.env.DEBUG === 'true' || process.argv.includes('--debug');
 
-export const config = {
+const config = {
   services: [
     [
       'electron',
       {
-        appPath: join(__dirname, 'dist'),
-        appName: 'daedalus',
-        appArgs: ['foo', 'bar=baz'],
+        binaryPath: resolve(__dirname, '..', 'release', 'darwin-x64', 'Daedalus-darwin-x64', 'Daedalus.app', 'Contents', 'MacOS', 'Daedalus'),
         chromedriver: {
           port: 9519,
           logFileName: 'wdio-chromedriver.log',
@@ -36,7 +34,7 @@ export const config = {
     tsNodeOpts: {
       transpileOnly: true,
       files: true,
-      project: join(__dirname, 'test', 'tsconfig.json'),
+      project: join(__dirname, 'tsconfig.json'),
     },
   },
   framework: 'mocha',
