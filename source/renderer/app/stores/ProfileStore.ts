@@ -41,7 +41,7 @@ import {
   TIME_OPTIONS,
 } from '../config/profileConfig';
 import { buildSystemInfo } from '../utils/buildSystemInfo';
-import { AnalyticsAcceptanceStatus } from '../analytics/types';
+import { AnalyticsAcceptanceStatus, EventCategories } from '../analytics/types';
 
 export default class ProfileStore extends Store {
   @observable
@@ -171,8 +171,7 @@ export default class ProfileStore extends Store {
       this._updateBigNumberFormat,
       this._redirectToInitialSettingsIfNoLocaleSet,
       this._redirectToAnalyticsScreenIfNotConfirmed,
-      this._redirectToTermsOfUseScreenIfTermsNotAccepted, // this._redirectToDataLayerMigrationScreenIfMigrationHasNotAccepted,
-      this._redirectToMainUiAfterAnalyticsAreConfirmed,
+      this._redirectToTermsOfUseScreenIfTermsNotAccepted,
       this._redirectToMainUiAfterTermsAreAccepted,
       this._redirectToMainUiAfterDataLayerMigrationIsAccepted,
     ]);
@@ -306,10 +305,7 @@ export default class ProfileStore extends Store {
 
   @computed
   get analyticsAcceptanceStatus(): AnalyticsAcceptanceStatus {
-    return (
-      this.getAnalyticsAcceptanceRequest.result ||
-      AnalyticsAcceptanceStatus.PENDING
-    );
+    return this.getAnalyticsAcceptanceRequest.result;
   }
 
   @computed
@@ -369,12 +365,20 @@ export default class ProfileStore extends Store {
       // @ts-ignore ts-migrate(2339) FIXME: Property 'stores' does not exist on type 'ProfileS... Remove this comment to see the full error message
       this.stores.wallets.refreshWalletsData();
     }
+
+    this.analytics.sendEvent(
+      EventCategories.SETTINGS,
+      'Changed user settings',
+      param
+    );
   };
   _updateTheme = async ({ theme }: { theme: string }) => {
     // @ts-ignore ts-migrate(1320) FIXME: Type of 'await' operand must either be a valid pro... Remove this comment to see the full error message
     await this.setThemeRequest.execute(theme);
     // @ts-ignore ts-migrate(1320) FIXME: Type of 'await' operand must either be a valid pro... Remove this comment to see the full error message
     await this.getThemeRequest.execute();
+
+    this.analytics.sendEvent(EventCategories.SETTINGS, 'Changed theme', theme);
   };
   _acceptTermsOfUse = async () => {
     // @ts-ignore ts-migrate(1320) FIXME: Type of 'await' operand must either be a valid pro... Remove this comment to see the full error message
@@ -386,6 +390,8 @@ export default class ProfileStore extends Store {
     this.getTermsOfUseAcceptanceRequest.execute();
   };
   _setAnalyticsAcceptanceStatus = (status: AnalyticsAcceptanceStatus) => {
+    const previousStatus = this.analyticsAcceptanceStatus;
+
     this.setAnalyticsAcceptanceRequest.execute(status);
     this.getAnalyticsAcceptanceRequest.execute();
 
@@ -393,6 +399,14 @@ export default class ProfileStore extends Store {
       this.analytics.enableTracking();
     } else if (status === AnalyticsAcceptanceStatus.REJECTED) {
       this.analytics.disableTracking();
+    }
+
+    if (previousStatus === AnalyticsAcceptanceStatus.PENDING) {
+      this._redirectToRoot();
+    } else {
+      this.actions.router.goToRoute.trigger({
+        route: ROUTES.SETTINGS.SUPPORT,
+      });
     }
   };
   _getAnalyticsAcceptance = () => {
@@ -496,14 +510,6 @@ export default class ProfileStore extends Store {
   };
   _redirectToMainUiAfterTermsAreAccepted = () => {
     if (this.areTermsOfUseAccepted && this._isOnTermsOfUsePage()) {
-      this._redirectToRoot();
-    }
-  };
-  _redirectToMainUiAfterAnalyticsAreConfirmed = () => {
-    if (
-      this.analyticsAcceptanceStatus !== AnalyticsAcceptanceStatus.PENDING &&
-      this._isOnAnalyticsPage()
-    ) {
       this._redirectToRoot();
     }
   };

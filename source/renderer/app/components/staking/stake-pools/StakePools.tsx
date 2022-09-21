@@ -3,6 +3,7 @@ import SVGInline from 'react-svg-inline';
 import { observer } from 'mobx-react';
 import { defineMessages, intlShape } from 'react-intl';
 import classnames from 'classnames';
+import { debounce } from 'lodash';
 import { StakingPageScrollContext } from '../layouts/StakingWithNavigation';
 import StakePoolsRanking from './StakePoolsRanking';
 import { StakePoolsList } from './StakePoolsList';
@@ -22,7 +23,7 @@ import {
 import smashSettingsIcon from '../../../assets/images/smash-settings-ic.inline.svg';
 import tinySpinnerIcon from '../../../assets/images/spinner-tiny.inline.svg';
 import { getSmashServerNameFromUrl } from '../../../utils/staking';
-import { AnalyticsTracker } from '../../../analytics';
+import { AnalyticsTracker, EventCategories } from '../../../analytics';
 
 const messages = defineMessages({
   delegatingListTitle: {
@@ -115,10 +116,23 @@ class StakePools extends Component<Props, State> {
     intl: intlShape.isRequired,
   };
   state = { ...initialState };
-  handleSearch = (search: string) =>
+
+  sendSearchAnalyticsEvent = debounce(
+    () =>
+      this.props.analyticsTracker.sendEvent(
+        EventCategories.STAKE_POOLS,
+        'Used stake pools search'
+      ),
+    5000
+  );
+
+  handleSearch = (search: string) => {
     this.setState({
       search,
     });
+
+    this.sendSearchAnalyticsEvent();
+  };
 
   handleClearSearch = () =>
     this.setState({
@@ -133,7 +147,7 @@ class StakePools extends Component<Props, State> {
     });
 
     this.props.analyticsTracker.sendEvent(
-      'Stake Pools',
+      EventCategories.STAKE_POOLS,
       'Changed view to grid view'
     );
   };
@@ -145,7 +159,7 @@ class StakePools extends Component<Props, State> {
     });
 
     this.props.analyticsTracker.sendEvent(
-      'Stake Pools',
+      EventCategories.STAKE_POOLS,
       'Changed view to grid rewards view'
     );
   };
@@ -157,7 +171,7 @@ class StakePools extends Component<Props, State> {
     });
 
     this.props.analyticsTracker.sendEvent(
-      'Stake Pools',
+      EventCategories.STAKE_POOLS,
       'Changed view to list view'
     );
   };

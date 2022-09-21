@@ -4,15 +4,14 @@ import { Environment } from '../../../common/types/environment.types';
 import formatCpuInfo from '../utils/formatCpuInfo';
 import {
   ANALYTICS_API_ENDPOINT,
+  CPU_DIMENSION_KEY,
   DEV_MODE_SITE_MAP_ID,
   NETWORK_TO_ANALYTICS_SITE_ID_MAP,
+  OS_DIMENSION_KEY,
+  RAM_DIMENSION_KEY,
+  VERSION_DIMENSION_KEY,
 } from '../config/analyticsConfig';
 import { formattedBytesToSize } from '../utils/formatters';
-
-const CPU_DIMENSION_KEY = 'dimension2';
-const RAM_DIMENSION_KEY = 'dimension3';
-const OS_DIMENSION_KEY = 'dimension4';
-const VERSION_DIMENSION_KEY = 'dimension5';
 
 /**
  * Matomo API reference:
@@ -40,18 +39,23 @@ export class MatomoClient implements AnalyticsClient {
     });
   };
 
-  sendEvent = async (category: string, action: string): Promise<void> => {
+  sendEvent = async (
+    category: string,
+    action: string,
+    name?: string
+  ): Promise<void> => {
     this.matomoTracker.track({
       _id: this.userId,
       ca: 1,
       e_c: category,
       e_a: action,
+      e_n: name,
       url: this.getAnalyticsURL(),
     });
   };
 
   private getAnalyticsURL() {
-    return 'http://daedalus/' + window.location.hash.replace('#/', '');
+    return `http://daedalus/${window.location.hash.replace('#/', '')}`;
   }
 
   private getMatomoSiteId(environment: Environment) {
